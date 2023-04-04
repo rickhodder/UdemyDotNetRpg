@@ -1,26 +1,28 @@
 global using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 
 namespace Services;
 public class CharacterService : ICharacterService
 {
-    private static List<Character> characters=new List<Character>
-    {
-        new Character(),
-        new Character{Id=1,Name="Sam"}
-    };
+    
     private readonly IMapper _mapper;
+    private readonly DataContext _context;
 
-    public CharacterService(IMapper mapper)
+    public CharacterService(IMapper mapper, DataContext context)
     {
         _mapper = mapper;
+        _context = context;
     }
 
     public  async Task<ServiceResponse<List<GetCharacterDto>>> AddCharacter(AddCharacterDto newCharacter)
     {
         var character = _mapper.Map<Character>(newCharacter);
-        character.Id=characters.Max(c=>c.Id)+1;
-        characters.Add(_mapper.Map<Character>(character));
-        return new ServiceResponse<List<GetCharacterDto>>{Data=characters.Select(c=>_mapper.Map<GetCharacterDto>(c)).ToList()};
+        _context.Characters.Add(character);
+        await _context.SaveChangesAsync();
+        var response = new ServiceResponse<List<GetCharacterDto>>();
+        response.Data= await _context.Characters.Select(c=>_mapper.Map<GetCharacterDto>(c)).ToListAsync();
+
+        return response;
     }
 
     public async Task<ServiceResponse<List<GetCharacterDto>>> DeleteCharacter(int id)
@@ -28,12 +30,14 @@ public class CharacterService : ICharacterService
         var characterResponse  = new ServiceResponse<List<GetCharacterDto>>();
         try
         {
-            var character = characters.FirstOrDefault(c=>c.Id==id);
+            var character = await _context.Characters.FirstOrDefaultAsync(c=>c.Id==id);
             if(character==null)
                 throw new Exception($"Character with id {id} not found");
 
-            characters.Remove(character);           
-            characterResponse.Data=characters.Select(c=>_mapper.Map<GetCharacterDto>(c)).ToList();
+            _context.Characters.Remove(character);     
+            await _context.SaveChangesAsync();
+            
+            characterResponse.Data=await _context.Characters.Select(c=>_mapper.Map<GetCharacterDto>(c)).ToListAsync();
         }
         catch (System.Exception ex)
         {
@@ -47,17 +51,18 @@ public class CharacterService : ICharacterService
 
     public  async Task<ServiceResponse<List<GetCharacterDto>>> GetAllCharacters()
     {
-        var data = characters.Select(c=>_mapper.Map<GetCharacterDto>(c)).ToList();
+        var dbCharacters = await _context.Characters.ToListAsync();
+        var data = dbCharacters.Select(c=>_mapper.Map<GetCharacterDto>(c)).ToList();
         return new ServiceResponse<List<GetCharacterDto>>{Data= data};
     }
 
     public async Task<ServiceResponse<GetCharacterDto>> GetCharacterById(int id)
     {
-        var character = characters.FirstOrDefault(c => c.Id == id);
-        if(character==null)
+        var dbCharacter = await _context.Characters.FirstOrDefaultAsync(c => c.Id == id);
+        if(dbCharacter==null)
             throw new Exception("Character not found");
 
-        return new ServiceResponse<GetCharacterDto>{Data=_mapper.Map<GetCharacterDto>(character)};
+        return new ServiceResponse<GetCharacterDto>{Data=_mapper.Map<GetCharacterDto>(dbCharacter)};
     }
 
     public async Task<ServiceResponse<GetCharacterDto>> UpdateCharacter(UpdateCharacterDto updatedCharacter)
@@ -65,7 +70,8 @@ public class CharacterService : ICharacterService
         var characterResponse  = new ServiceResponse<GetCharacterDto>();
         try
         {
-            var character = characters.FirstOrDefault(c=>c.Id==updatedCharacter.Id);
+            var character = 
+                await _context.Characters.FirstOrDefaultAsync(c=>c.Id==updatedCharacter.Id);
             if(character==null)
                 throw new Exception($"Character with id {updatedCharacter.Id} not found");
 
@@ -75,7 +81,7 @@ public class CharacterService : ICharacterService
             character.HitPoints=updatedCharacter.HitPoints;
             character.Intelligence=updatedCharacter.Intelligence;
             character.Strength=updatedCharacter.Strength;
-            
+            await _context.SaveChangesAsync();
         }
         catch (System.Exception ex)
         {
