@@ -1,5 +1,8 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")] // api/Character
 public class CharacterController:ControllerBase // since no ui
@@ -14,6 +17,7 @@ public class CharacterController:ControllerBase // since no ui
     [HttpGet("GetAll")]
     public async Task<ActionResult<ServiceResponse<List<GetCharacterDto>>>> Get()
     {
+        int userid = int.Parse(User.Claims.FirstOrDefault(c=>c.Type==ClaimTypes.NameIdentifier)!.Value);
         return Ok(await _characterService.GetAllCharacters());
     }
 
