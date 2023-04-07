@@ -93,7 +93,7 @@ public class CharacterService : ICharacterService
                 await _context.Characters
                     .Include(c => c.User)
                     .FirstOrDefaultAsync(c => c.Id == updatedCharacter.Id);
-            if (character == null || character.User.Id!= GetUserId())
+            if (character == null || character.User!.Id!= GetUserId())
                 throw new Exception($"Character with id {updatedCharacter.Id} not found");
 
             character.Name = updatedCharacter.Name;
