@@ -5,5 +5,6 @@ public class AutoMapperProfile:Profile
         CreateMap<Character, GetCharacterDto>();
         CreateMap<AddCharacterDto,Character>();
         CreateMap<Weapon, GetWeaponDto>();
+        CreateMap<Skill, GetSkillDto>();
     }
 }

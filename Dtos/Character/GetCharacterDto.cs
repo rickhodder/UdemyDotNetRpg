@@ -10,4 +10,5 @@ public class GetCharacterDto
     public RpgClass Class { get; set; }=RpgClass.Knight;
     public GetWeaponDto? Weapon { get; set; }
     
+    public List<GetSkillDto>? Skills { get; set; }
 }
